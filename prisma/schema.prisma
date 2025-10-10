@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  nome      String   @db.VarChar(60)
+  email     String   @db.VarChar(40)
+  senha     String   @db.VarChar(60)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  logs      Log[]
+
+  @@map("admins")
+}
+
+model Usuario {
+  id          String       @id @default(uuid()) @db.VarChar(36)
+  nome        String       @db.VarChar(50)
+  email       String       @unique @db.VarChar(100)
+  senha       String       @db.VarChar(60)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  lastAccess  DateTime?
+  boards      Board[]
+  tasks       Task[]
+  comentarios Comentario[]
+  Log         Log[]
+
+  @@map("usuarios")
+}
+
+enum Motivos {
+  TRABALHO
+  ESTUDO
+  PESSOAL
+  OUTRO
+}
+
+model Board {
+  id        Int     @id @default(autoincrement())
+  titulo    String  @db.VarChar(50)
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+  usuarioId String
+  motivo    Motivos
+  listas    Lista[]
+
+  @@map("boards")
+}
+
+model Lista {
+  id      Int    @id @default(autoincrement())
+  titulo  String @db.VarChar(30)
+  board   Board  @relation(fields: [boardId], references: [id])
+  boardId Int
+  tasks   Task[]
+
+  @@map("listas")
+}
+
+model Task {
+  id          Int          @id @default(autoincrement())
+  titulo      String       @db.VarChar(30)
+  descricao   String?      @db.VarChar(255)
+  prazo       DateTime     @db.Date()
+  lista       Lista        @relation(fields: [listaId], references: [id])
+  listaId     Int
+  usuario     Usuario      @relation(fields: [usuarioId], references: [id])
+  usuarioId   String
+  comentarios Comentario[]
+
+  @@map("tasks")
+}
+
+model Comentario {
+  id        Int      @id @default(autoincrement())
+  conteudo  String   @db.VarChar(255)
+  task      Task     @relation(fields: [taskId], references: [id])
+  taskId    Int
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id])
+  usuarioId String?
+
+  @@map("comentarios")
+}
+
+model Log {
+  id          Int      @id @default(autoincrement())
+  usuario     Usuario?  @relation(fields: [usuarioId], references: [id])
+  usuarioId   String?   @db.VarChar(36)
+  admin       Admin?    @relation(fields: [adminId], references: [id])
+  adminId     String?   @db.VarChar(36)
+  descricao   String   @db.VarChar(60)
+  complemento String   @db.VarChar(200)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("logs")
+}
