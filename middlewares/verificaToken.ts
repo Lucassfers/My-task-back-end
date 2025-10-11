@@ -1,10 +1,13 @@
+import jwt from "jsonwebtoken"
 import { Request, Response, NextFunction } from 'express'
-import jwt from 'jsonwebtoken'
 
-interface TokenInterface {
-    userLogadoId: string
-    userLogadoNome: string
+type TokenType = {
+  userLogadoId: number
+  userLogadoNome: string
+  userLogadoNivel: number
 }
+
+// Acrescenta na interface Request (de forma global) os 2 novos atributos (TypeScript)
 declare global {
   namespace Express {
     interface Request {
@@ -14,24 +17,27 @@ declare global {
   }
 }
 
-export function verificaToken(req: Request, res: Response, next: NextFunction) {
-    const { authorization } = req.headers
+export function verificaToken(req: Request | any, res: Response, next: NextFunction) {
+  const { authorization } = req.headers
 
-    if (!authorization) {
-        res.status(401).json({ erro: "Token não informado" })
-        return
-    }
-    const token = authorization.split(" ")[1]
+  if (!authorization) {
+    res.status(401).json({ error: "Token não informado" })
+    return
+  }
 
-    try {
-        const decode = jwt.verify(token, process.env.JWT_KEY as string)
-        // console.log(decode)
-        const { userLogadoId, userLogadoNome } = decode as TokenInterface
-        req.userLogadoId = userLogadoId
-        req.userLogadoNome = userLogadoNome
+  const token = authorization.split(" ")[1]
 
-        next()
-    } catch (erro) {
-        res.status(401).json({ erro: "Token inválido" })
-    }
+  try {
+    const decode = jwt.verify(token, process.env.JWT_KEY as string)
+    // console.log(decode)
+    const { userLogadoId, userLogadoNome, userLogadoNivel } = decode as TokenType
+
+    req.userLogadoId    = userLogadoId
+    req.userLogadoNome  = userLogadoNome
+    req.userLogadoNivel = userLogadoNivel
+
+    next()
+  } catch (error) {
+    res.status(401).json({ error: "Token inválido" })
+  }
 }
