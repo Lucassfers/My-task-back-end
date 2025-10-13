@@ -11,9 +11,17 @@ const boardSchema = z.object({
   motivo: z.enum(['TRABALHO', 'ESTUDO', 'PESSOAL', 'OUTRO']),
 });
 
-router.get('/', async (_req, res) => {
+router.get('/', async (req: any, res) => {
   try {
+    const usuarioId = req.userLogadoId;
+    if (!usuarioId) {
+      return res.status(401).json({ erro: 'Usuário não logado' });
+    }
+
     const boards = await prisma.board.findMany({
+      where: {
+        usuarioId: usuarioId,
+      },
       include: {
         listas: {
           select: { id: true, titulo: true, boardId: true },
@@ -27,11 +35,16 @@ router.get('/', async (_req, res) => {
   }
 });
 
-router.get('/:id/listas/tasks/comentarios', async (req, res) => {
+router.get('/:id/listas/tasks/comentarios', async (req: any, res) => {
   const { id } = req.params
+  const usuarioId = req.userLogadoId;
+
+  if (!usuarioId) {
+    return res.status(401).json({ erro: 'Usuário não logado' });
+  }
   try {
     const board = await prisma.board.findUnique({
-      where: { id: Number(id) },
+      where: { id: Number(id), usuarioId: usuarioId },
       include: {
         listas: {
           include: {
@@ -52,6 +65,11 @@ router.get('/:id/listas/tasks/comentarios', async (req, res) => {
         },
       }
     })
+
+    if (!board) {
+      return res.status(404).json({ erro: 'Board não encontrado.' })
+    }
+
     res.status(200).json(board)
   } catch (error) {
     res.status(400).json({ erro: error })
