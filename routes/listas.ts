@@ -11,10 +11,21 @@ const listaSchema = z.object({
   
 });
 
-router.get('/', async (_req, res) => {
+router.get('/', async (req: any, res) => {
   try {
+    const usuarioId = req.userLogadoId;
+
+    if (!usuarioId) {
+      return res.status(401).json({ erro: 'Usuário não logado.' });
+    }
+
     const listas = await prisma.lista.findMany({
       include: { board: true },
+      where: {
+          board: { 
+            usuarioId: usuarioId, 
+          } 
+        },
       orderBy: [{ boardId: 'asc' }],
     });
     res.status(200).json(listas);
