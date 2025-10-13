@@ -10,6 +10,7 @@ import routesListas from './routes/listas'
 import routesLogin from './routes/login'
 import routesAdmin from './routes/admin'
 import routesAdminLogin from "./routes/adminLogin"
+import routesDashboards from "./routes/dashboards"
 
 const app = express()
 const port = 3000
@@ -25,6 +26,7 @@ app.use("/listas", routesListas)
 app.use("/login", routesLogin)
 app.use("/admin", routesAdmin)
 app.use("/adminLogin", routesAdminLogin)
+app.use("/dashbooards", routesDashboards)
 
 app.get('/', (req, res) => {
   res.send('API: MyTask')
