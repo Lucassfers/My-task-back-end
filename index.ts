@@ -11,6 +11,7 @@ import routesLogin from './routes/login'
 import routesAdmin from './routes/admin'
 import routesAdminLogin from "./routes/adminLogin"
 import routesDashboards from "./routes/dashboards"
+import { verificaToken } from './middlewares/verificaToken'
 
 const app = express()
 const port = 3000
