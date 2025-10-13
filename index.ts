@@ -10,6 +10,7 @@ import routesListas from './routes/listas'
 import routesLogin from './routes/login'
 import routesAdmin from './routes/admin'
 import routesAdminLogin from "./routes/adminLogin"
+import { verificaToken } from './middlewares/verificaToken'
 
 const app = express()
 const port = 3000
@@ -17,11 +18,11 @@ const port = 3000
 app.use(express.json())
 app.use(cors())
 
-app.use("/boards", routesBoards)
-app.use("/comentarios", routesComentarios)
+app.use("/boards", verificaToken, routesBoards)
+app.use("/comentarios", verificaToken, routesComentarios)
 app.use("/usuarios", routesUsuarios)
-app.use("/tasks", routesTasks)
-app.use("/listas", routesListas)
+app.use("/tasks", verificaToken, routesTasks)
+app.use("/listas", verificaToken, routesListas)
 app.use("/login", routesLogin)
 app.use("/admin", routesAdmin)
 app.use("/adminLogin", routesAdminLogin)
