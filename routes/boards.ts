@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
 import { z } from 'zod';
+import { verificaToken } from '../middlewares/verificaToken';
 
 const prisma = new PrismaClient();
 const router = Router();
@@ -11,7 +12,7 @@ const boardSchema = z.object({
   motivo: z.enum(['TRABALHO', 'ESTUDO', 'PESSOAL', 'OUTRO']),
 });
 
-router.get('/', async (req: any, res) => {
+router.get('/', verificaToken, async (req: any, res) => {
   try {
     const usuarioId = req.userLogadoId;
     if (!usuarioId) {
