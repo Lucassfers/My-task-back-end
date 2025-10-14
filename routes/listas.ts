@@ -16,7 +16,7 @@ router.get('/', async (req: any, res) => {
     const usuarioId = req.userLogadoId;
 
     if (!usuarioId) {
-      return res.status(401).json({ erro: 'Usuário não logado.' });
+      return res.status(401).json({ erro: 'Usuário não autenticado' });
     }
 
     const listas = await prisma.lista.findMany({
@@ -102,13 +102,22 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-router.get('/lista/:termo', async (req, res) => {
+router.get('/lista/:termo', async (req: any, res) => {
   const { termo } = req.params;
+  const usuarioId = req.userLogadoId;
+
+  if (!usuarioId) {
+    return res.status(401).json({ erro: 'Usuário não autenticado' });
+  }
+
   if (Number.isNaN(Number(termo))) {
     try {
       const listas = await prisma.lista.findMany({
         include: { board: true },
         where: {
+          board: {
+            usuarioId: usuarioId,
+          },
           OR: [
             { titulo: { contains: termo, mode: 'insensitive' } },
             { board: { titulo: { equals: termo, mode: 'insensitive' } } },

@@ -2,9 +2,8 @@ import jwt from "jsonwebtoken"
 import { Request, Response, NextFunction } from 'express'
 
 type TokenType = {
-  userLogadoId: number
-  userLogadoNome: string
-  // userLogadoNivel: number
+  usuarioLogadoId: string
+  usuarioLogadoNome: string
 }
 
 // Acrescenta na interface Request (de forma global) os 2 novos atributos (TypeScript)
@@ -30,11 +29,10 @@ export function verificaToken(req: Request | any, res: Response, next: NextFunct
   try {
     const decode = jwt.verify(token, process.env.JWT_KEY as string)
     // console.log(decode)
-    const { userLogadoId, userLogadoNome } = decode as TokenType // userLogadoId, userLogadoNome, userLogadoNivel
+    const { usuarioLogadoId, usuarioLogadoNome } = decode as TokenType
 
-    req.userLogadoId    = userLogadoId
-    req.userLogadoNome  = userLogadoNome
-    // req.userLogadoNivel = userLogadoNivel
+    req.userLogadoId    = usuarioLogadoId
+    req.userLogadoNome  = usuarioLogadoNome
 
     next()
   } catch (error) {

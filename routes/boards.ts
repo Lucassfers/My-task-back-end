@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
 import { z } from 'zod';
+import { verificaToken } from '../middlewares/verificaToken';
 
 const prisma = new PrismaClient();
 const router = Router();
@@ -11,11 +12,11 @@ const boardSchema = z.object({
   motivo: z.enum(['TRABALHO', 'ESTUDO', 'PESSOAL', 'OUTRO']),
 });
 
-router.get('/', async (req: any, res) => {
+router.get('/', verificaToken, async (req: any, res) => {
   try {
     const usuarioId = req.userLogadoId;
     if (!usuarioId) {
-      return res.status(401).json({ erro: 'Usuário não logado' });
+      return res.status(401).json({ erro: 'Usuário não autenticado' });
     }
 
     const boards = await prisma.board.findMany({
@@ -40,11 +41,15 @@ router.get('/:id/listas/tasks/comentarios', async (req: any, res) => {
   const usuarioId = req.userLogadoId;
 
   if (!usuarioId) {
-    return res.status(401).json({ erro: 'Usuário não logado' });
+    return res.status(401).json({ erro: 'Usuário não autenticado' });
   }
+
   try {
-    const board = await prisma.board.findUnique({
-      where: { id: Number(id), usuarioId: usuarioId },
+    const board = await prisma.board.findFirst({
+      where: { 
+        id: Number(id),
+        usuarioId: usuarioId // Verifica se o board pertence ao usuário
+      },
       include: {
         listas: {
           include: {
@@ -67,7 +72,7 @@ router.get('/:id/listas/tasks/comentarios', async (req: any, res) => {
     })
 
     if (!board) {
-      return res.status(404).json({ erro: 'Board não encontrado.' })
+      return res.status(404).json({ erro: 'Board não encontrado ou você não tem permissão para acessá-lo' });
     }
 
     res.status(200).json(board)
@@ -129,8 +134,13 @@ router.delete('/:id', async (req, res) => {
 });
 
 
-router.get("/pesquisa/:termo", async (req, res) => {
+router.get("/pesquisa/:termo", async (req: any, res) => {
   const { termo } = req.params
+  const usuarioId = req.userLogadoId;
+
+  if (!usuarioId) {
+    return res.status(401).json({ erro: 'Usuário não autenticado' });
+  }
 
   try {
       const boards = await prisma.board.findMany({
@@ -138,6 +148,7 @@ router.get("/pesquisa/:termo", async (req, res) => {
           usuario: true,
         },
         where: {
+          usuarioId: usuarioId,
           OR: [
             { titulo: { contains: termo, mode: "insensitive" } },
             { usuario: { nome: { equals: termo, mode: "insensitive" } } },
