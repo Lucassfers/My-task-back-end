@@ -80,7 +80,7 @@ router.get("/boardsMotivo", async (req, res) => {
       orderBy: { motivo: "asc" }
     })
     const motivos2 = motivos.map((m) => ({
-      boards: m.motivo,
+      motivo: m.motivo,
       num: m._count.motivo,
     }))
     res.status(200).json(motivos2)

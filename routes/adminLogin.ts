@@ -18,10 +18,12 @@ router.post("/", async (req, res) => {
         const admin = await prisma.admin.findFirst({
             where: { email }
         })
+        
         if(admin == null) {
             res.status(400).json({ erro: msgPadrao })
             return
         }
+
         if(bcrypt.compareSync(senha, admin.senha)){
             const token = jwt.sign({
                 adminLogadoId: admin.id,
