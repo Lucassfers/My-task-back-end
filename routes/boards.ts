@@ -36,7 +36,7 @@ router.get('/', verificaToken, async (req: any, res) => {
   }
 });
 
-router.get('/:id/listas/tasks/comentarios', async (req: any, res) => {
+router.get('/:id/listas/tasks/comentarios', verificaToken, async (req: any, res) => {
   const { id } = req.params
   const usuarioId = req.userLogadoId;
 
