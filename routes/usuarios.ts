@@ -93,12 +93,93 @@ router.delete("/:id", async (req, res) => {
     const { id } = req.params
 
     try {
-        const usuario = await prisma.usuario.delete({
-            where: { id }
+        const existente = await prisma.usuario.findUnique({ where: { id } })
+        if (!existente) {
+            return res.status(404).json({ erro: "Usuário não encontrado" })
+        }
+
+        const resultado = await prisma.$transaction(async (tx) => {
+            const anonComentarios = await tx.comentario.updateMany({
+                where: { usuarioId: id },
+                data: { usuarioId: null }
+            })
+
+            const tasksAtribuidas = await tx.task.findMany({
+                where: { usuarioId: id },
+                select: { id: true }
+            })
+            const taskIdsAtribuidas = tasksAtribuidas.map(t => t.id)
+            let delComentariosTasksAtribuidas = { count: 0 }
+            let delTasksAtribuidas = { count: 0 }
+            if (taskIdsAtribuidas.length > 0) {
+                delComentariosTasksAtribuidas = await tx.comentario.deleteMany({
+                    where: { taskId: { in: taskIdsAtribuidas } }
+                })
+                delTasksAtribuidas = await tx.task.deleteMany({
+                    where: { id: { in: taskIdsAtribuidas } }
+                })
+            }
+
+            const boardsDoUsuario = await tx.board.findMany({
+                where: { usuarioId: id },
+                select: { id: true }
+            })
+            const boardIds = boardsDoUsuario.map(b => b.id)
+            let delComentariosTasksBoards = { count: 0 }
+            let delTasksBoards = { count: 0 }
+            let delListas = { count: 0 }
+            let delBoards = { count: 0 }
+            if (boardIds.length > 0) {
+                const listas = await tx.lista.findMany({
+                    where: { boardId: { in: boardIds } },
+                    select: { id: true }
+                })
+                const listaIds = listas.map(l => l.id)
+                if (listaIds.length > 0) {
+                    const tasksBoards = await tx.task.findMany({
+                        where: { listaId: { in: listaIds } },
+                        select: { id: true }
+                    })
+                    const taskIdsBoards = tasksBoards.map(t => t.id)
+                    if (taskIdsBoards.length > 0) {
+                        delComentariosTasksBoards = await tx.comentario.deleteMany({
+                            where: { taskId: { in: taskIdsBoards } }
+                        })
+                        delTasksBoards = await tx.task.deleteMany({
+                            where: { id: { in: taskIdsBoards } }
+                        })
+                    }
+                    delListas = await tx.lista.deleteMany({ where: { id: { in: listaIds } } })
+                }
+                delBoards = await tx.board.deleteMany({ where: { id: { in: boardIds } } })
+            }
+
+            const updLogs = await tx.log.updateMany({
+                where: { usuarioId: id },
+                data: { usuarioId: null }
+            })
+
+            const deleted = await tx.usuario.delete({ where: { id } })
+
+            return {
+                deleted,
+                afetados: {
+                    comentariosAnonimizados: anonComentarios.count,
+                    comentariosTasksAtribuidas: delComentariosTasksAtribuidas.count,
+                    tasksAtribuidas: delTasksAtribuidas.count,
+                    comentariosTasksBoards: delComentariosTasksBoards.count,
+                    tasksBoards: delTasksBoards.count,
+                    listas: delListas.count,
+                    boards: delBoards.count,
+                    logsDesvinculados: updLogs.count,
+                }
+            }
         })
-        res.status(200).json(usuario)
-    } catch (error) {
-        res.status(400).json(error)
+
+        res.status(200).json({ mensagem: "Usuário deletado com sucesso", ...resultado })
+    } catch (error: any) {
+        console.error("ERRO DELETE /usuarios/:id", error)
+        res.status(400).json({ erro: "Não foi possível deletar o usuário.", detalhe: String(error?.message ?? error) })
     }
 })
 
