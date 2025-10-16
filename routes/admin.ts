@@ -104,4 +104,50 @@ router.get("/:id", async (req, res) => {
     }
 })
 
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params
+
+  try {
+    // Verifica existência
+    const existente = await prisma.admin.findUnique({ where: { id } })
+    if (!existente) {
+      return res.status(404).json({ erro: "Admin não encontrado" })
+    }
+
+    const resultado = await prisma.$transaction(async (tx) => {
+      const updBoards = await tx.board.updateMany({
+        where: { adminId: id },
+        data: { adminId: null }
+      })
+      const updUsuarios = await tx.usuario.updateMany({
+        where: { adminId: id },
+        data: { adminId: null }
+      })
+      const updLogs = await tx.log.updateMany({
+        where: { adminId: id },
+        data: { adminId: null }
+      })
+
+      const deleted = await tx.admin.delete({ where: { id } })
+
+      return {
+        deleted,
+        afetados: {
+          boards: updBoards.count,
+          usuarios: updUsuarios.count,
+          logs: updLogs.count,
+        }
+      }
+    })
+
+    res.status(200).json({
+      mensagem: "Admin deletado com sucesso",
+      ...resultado
+    })
+  } catch (error: any) {
+    console.error("ERRO DELETE /admin/:id", error)
+    res.status(400).json({ erro: "Não foi possível deletar o admin.", detalhe: String(error?.message ?? error) })
+  }
+})
+
 export default router
