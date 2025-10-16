@@ -174,5 +174,24 @@ router.patch("/destacar/:id", verificaToken, async (req, res) => {
     }
 })
 
+router.patch("/concluir/:id", verificaToken, async (req, res) => {
+    const { id } = req.params
+
+    try{
+        const taskAtual = await prisma.task.findUnique({
+            where: { id: Number(id) },
+            select: { concluida: true},
+        });
+
+        const task = await prisma.task.update({
+            where: { id: Number(id)},
+            data: { concluida: !taskAtual?.concluida }
+        })
+        res.status(200).json(task)
+    } catch (error) {
+        res.status(400).json(error)
+    }
+})
+
 
 export default router
