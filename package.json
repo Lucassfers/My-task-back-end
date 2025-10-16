@@ -4,7 +4,9 @@
   "main": "index.ts",
   "scripts": {
     "dev": "npx ts-node-dev --respawn index.ts nodemon -r dotenv/config src/server.ts",
-    "start": "node -r dotenv/config dist/server.js"
+    "start": "node -r dotenv/config dist/server.js",
+    "vercel-build": "npx prisma migrate deploy",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
