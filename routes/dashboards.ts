@@ -10,37 +10,86 @@ router.get("/gerais", async (req, res) => {
         const totalListas = await prisma.lista.count()
         const totalTasks = await prisma.task.count()
         const totalComentarios = await prisma.comentario.count()
-        res.status(200).json({ totalBoards, totalListas, totalTasks, totalComentarios})
+        const totalUsuarios = await prisma.usuario.count()
+        res.status(200).json({ totalBoards, totalListas, totalTasks, totalComentarios, totalUsuarios})
     } catch (error) {
         res.status(400).json(error)
     }
 })
 
-type BoardGroupByMotivo = {
-  motivo: string
+type UsuarioGroupByBoard = {
+  nome: string
   _count: {
-    id: number
+    boards: number
   }
 }
 
-router.get("/boardsNome", async (req, res) => {
-  try {
-    const boards = await prisma.board.groupBy({
-      by: ["motivo"],
-      _count: { id: true }, 
-    });
-
-    const boards2 = boards.map((board: BoardGroupByMotivo) => ({
-      motivo: board.motivo,
-      total: board._count.id, 
-    }));
-
-    res.status(200).json(boards2);
+router.get("/boardsUsuario", async(req, res) => {
+  try{
+    const usuarios = await prisma.usuario.findMany({
+      select: {
+        nome: true,
+        _count: {
+           select: { boards: true } }
+      }
+    })
+    const usuarios2 = usuarios.filter((item: UsuarioGroupByBoard) => item._count.boards > 0).map((item: UsuarioGroupByBoard) => ({
+      nome: item.nome,
+      boards: item._count.boards
+    }))
+    res.status(200).json(usuarios2)
   } catch (error) {
-    console.error(error);
-    res.status(400).json(error);
+    res.status(400).json(error)
   }
-});
+})
+
+
+type UsuarioGroupByComentario = {
+  nome: string
+  _count: {
+    comentarios: number
+  }
+}
+
+router.get("/comentariosUsuario", async(req, res) => {
+  try{
+    const usuarios = await prisma.usuario.findMany({
+      select: {
+        nome: true,
+        _count: {
+           select: { comentarios: true } }
+      }
+    })
+    const usuarios2 = usuarios.filter((item: UsuarioGroupByComentario) => item._count.comentarios > 0).map((item: UsuarioGroupByComentario) => ({
+      nome: item.nome,
+      comentarios: item._count.comentarios
+    }))
+    res.status(200).json(usuarios2)
+  } catch (error) {
+    res.status(400).json(error)
+  }
+})
+
+router.get("/boardsMotivo", async (req, res) => {
+  try{
+    const motivos = await prisma.board.groupBy({
+      by: ['motivo'],
+      _count: {
+        motivo: true
+      },
+      orderBy: { motivo: "asc" }
+    })
+    const motivos2 = motivos.map((m) => ({
+      motivo: m.motivo,
+      num: m._count.motivo,
+    }))
+    res.status(200).json(motivos2)
+  } catch (error) {
+    res.status(400).json(error)
+  }
+})
+
+
 
 export default router
 

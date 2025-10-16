@@ -1,6 +1,7 @@
 import { PrismaClient, Motivos } from "@prisma/client";
 import { Router } from "express";
 import { z }  from 'zod'
+import { verificaToken } from "../middlewares/verificaToken";
 
 const prisma = new PrismaClient()
 const router = Router();
@@ -10,6 +11,7 @@ const taskSchema = z.object({
         { message: "Nome da tarefa deve ter pelo menos 1 caractere."}),
     descricao: z.string().optional(),
     prazo: z.coerce.date(),
+    destaque: z.boolean().optional(),
     usuarioId: z.string(),
     listaId: z.coerce.number().int().positive(),
 })
@@ -114,5 +116,82 @@ router.get('/task/:termo', async (req, res) => {
     }
     return res.status(400).json({ erro: 'Use /by-lista/:listaId para listar por lista'})
 })
+
+router.get("/destaques", verificaToken, async (req, res) => {
+    try {
+        const tasks = await prisma.task.findMany({
+            where: {
+                destaque: true
+            },
+            include: {
+                lista: true
+            },
+            orderBy:{
+                id: "desc"
+            }
+        })
+        res.status(200).json(tasks)
+    } catch (error) {
+        res.status(500).json({ erro: error })
+    }
+})
+
+router.get("/semDestaques", verificaToken, async (req, res) => {
+    try {
+        const tasks = await prisma.task.findMany({
+            where: {
+                destaque: false
+            },
+            include: {
+                lista: true
+            },
+            orderBy:{
+                id: "desc"
+            }
+        })
+        res.status(200).json(tasks)
+    } catch (error) {
+        res.status(500).json({ erro: error })
+    }
+})
+
+router.patch("/destacar/:id", verificaToken, async (req, res) => {
+    const { id } = req.params
+
+    try{
+        const destacarTask = await prisma.task.findUnique({
+            where: { id: Number(id) },
+            select: { destaque: true},
+        });
+
+        const task = await prisma.task.update({
+            where: { id: Number(id)},
+            data: { destaque: !destacarTask?.destaque }
+        })
+        res.status(200).json(task)
+    } catch (error) {
+        res.status(400).json(error)
+    }
+})
+
+router.patch("/concluir/:id", verificaToken, async (req, res) => {
+    const { id } = req.params
+
+    try{
+        const taskAtual = await prisma.task.findUnique({
+            where: { id: Number(id) },
+            select: { concluida: true},
+        });
+
+        const task = await prisma.task.update({
+            where: { id: Number(id)},
+            data: { concluida: !taskAtual?.concluida }
+        })
+        res.status(200).json(task)
+    } catch (error) {
+        res.status(400).json(error)
+    }
+})
+
 
 export default router
