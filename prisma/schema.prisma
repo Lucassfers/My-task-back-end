@@ -75,8 +75,7 @@ model Task {
   descricao   String?      @db.VarChar(255)
   prazo       DateTime     @db.Date()
   lista       Lista        @relation(fields: [listaId], references: [id])
-  destaque    Boolean      @default(false)
-  concluida   Boolean      @default(false)
+  destaque   Boolean       @default(false)
   listaId     Int
   usuario     Usuario      @relation(fields: [usuarioId], references: [id])
   usuarioId   String
