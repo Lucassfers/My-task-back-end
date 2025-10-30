@@ -108,3 +108,4 @@ model Log {
 
   @@map("logs")
 }
+
